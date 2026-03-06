@@ -31,8 +31,8 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.system.NonnullDefault;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -134,8 +134,7 @@ public class Click extends Screen {
     }
 
     @Override
-    @NonnullDefault
-    public void resize(MinecraftClient mcIn, int w, int h) {
+    public void resize(@NotNull MinecraftClient mcIn, int w, int h) {
         super.resize(mcIn, w, h);
         init();
     }

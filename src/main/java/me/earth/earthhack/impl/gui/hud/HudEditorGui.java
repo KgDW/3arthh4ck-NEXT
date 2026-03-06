@@ -29,7 +29,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.lwjgl.system.NonnullDefault;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.util.List;
@@ -85,8 +85,7 @@ public class HudEditorGui extends Screen
     }
 
     @Override
-    @NonnullDefault
-    public void resize(MinecraftClient mcIn, int w, int h) {
+    public void resize(@NotNull MinecraftClient mcIn, int w, int h) {
         super.resize(mcIn, w, h);
         init();
     }

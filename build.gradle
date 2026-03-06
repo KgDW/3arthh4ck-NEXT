@@ -1,13 +1,18 @@
 plugins {
-    id 'fabric-loom' version '1.7-SNAPSHOT'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id 'fabric-loom' version '1.15.4'
 }
 
 version = project.mod_version
 group = project.maven_group
 
+def modVersion = version
+
+def archiveBaseName = project.archives_base_name
+
+def lwjglVersion = '3.4.1'
+
 base {
-    archivesName = project.archives_base_name
+    archivesName = archiveBaseName
 }
 
 repositories {
@@ -18,8 +23,8 @@ repositories {
 }
 
 configurations {
+    library
     implementation.extendsFrom(library)
-    shadow.extendsFrom(library)
 }
 
 loom {
@@ -32,35 +37,27 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     library "club.minnced:java-discord-rpc:2.0.2"
+    include "club.minnced:java-discord-rpc:2.0.2"
 
-    library group: 'org.lwjgl', name: 'lwjgl-nanovg', version: '3.3.3'
-    library "org.lwjgl:lwjgl-nanovg::natives-windows"
-    library "org.lwjgl:lwjgl-nanovg::natives-linux"
-    library "org.lwjgl:lwjgl-nanovg::natives-macos"
+    library "org.lwjgl:lwjgl-nanovg:${lwjglVersion}"
+    include "org.lwjgl:lwjgl-nanovg:${lwjglVersion}"
+
+    library "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-windows"
+    include "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-windows"
+
+    library "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-linux"
+    include "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-linux"
+
+    library "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-macos"
+    include "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-macos"
 }
 
 processResources {
-    inputs.property "version", project.version
+    inputs.property "version", modVersion
 
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand "version": modVersion
     }
-}
-
-shadowJar {
-    archiveClassifier = "dev-shadow"
-    configurations = [project.configurations.shadow]
-
-    dependencies {
-        exclude {
-            it.moduleGroup == "net.java.dev.jna"
-        }
-    }
-}
-
-remapJar {
-    dependsOn shadowJar
-    inputFile.set(shadowJar.archiveFile)
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -75,7 +72,7 @@ java {
 
 jar {
     from("LICENSE") {
-        rename { "${it}_${project.base.archivesName.get()}"}
+        rename { "${it}_${archiveBaseName}" }
     }
 
     manifest {
