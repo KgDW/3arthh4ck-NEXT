@@ -9,7 +9,7 @@ def modVersion = version
 
 def archiveBaseName = project.archives_base_name
 
-def lwjglVersion = '3.4.1'
+def lwjglVersion = '3.3.3'
 
 base {
     archivesName = archiveBaseName
