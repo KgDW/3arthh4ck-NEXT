@@ -1,0 +1,88 @@
+package me.earth.earthhack.impl.managers.render;
+
+import me.earth.earthhack.api.cache.ModuleCache;
+import me.earth.earthhack.api.util.interfaces.Globals;
+import me.earth.earthhack.impl.modules.Caches;
+import me.earth.earthhack.impl.modules.client.customfont.FontMod;
+import me.earth.earthhack.impl.util.render.NVGRenderer;
+import me.earth.earthhack.impl.util.render.TextRenderUtil;
+import net.minecraft.client.gui.DrawContext;
+
+import java.awt.*;
+import java.util.List;
+
+@SuppressWarnings("unused")
+public class TextRenderer implements Globals
+{
+    private final ModuleCache<FontMod> fontMod =
+            Caches.getModule(FontMod.class);
+
+    public static final NVGRenderer FONTS = new NVGRenderer();
+
+    private void drawString(DrawContext context, String text, float x, float y, int color, boolean shadow, float scale) {
+        if (text == null || text.isEmpty())
+            return;
+        if (fontMod.isEnabled()) {
+            if (FONTS.isInitialized()) {
+                FONTS.startDraw();
+                FONTS.drawText(text, x, y, fontMod.get().fontSize.getValue() * scale, new Color(color, true), shadow);
+                FONTS.endDraw();
+            } else {
+                FONTS.initialize();
+            }
+        } else {
+            context.getMatrices().scale(scale, scale, scale);
+            context.drawText(mc.textRenderer, text, (int) (x / scale), (int) (y / scale), color, shadow);
+            context.draw();
+            context.getMatrices().scale(1 / scale, 1 / scale, 1 / scale);
+        }
+    }
+
+    public void drawStringWithShadow(DrawContext context, String text, float x, float y, int color) {
+        drawString(context, text, x, y, color, true, 1);
+    }
+
+    public void drawString(DrawContext context, String text, float x, float y, int color) {
+        drawString(context, text, x, y, color, false, 1);
+    }
+
+    public void drawString(DrawContext context, String text, float x, float y, int color, boolean dropShadow) {
+        drawString(context, text, x, y, color, dropShadow, 1);
+    }
+
+    public void drawStringScaled(DrawContext context, String text, float x, float y, int color, boolean dropShadow, float scale) {
+        drawString(context, text, x, y, color, dropShadow, scale);
+    }
+
+    public int getStringWidth(String text) {
+        if (usingCustomFont()) {
+            return (int) FONTS.measureWidth(text);
+        } else {
+            return mc.textRenderer.getWidth(text);
+        }
+    }
+
+    public int getStringHeightI() {
+        if (usingCustomFont()) {
+            return (int) FONTS.measureHeight();
+        } else {
+            return mc.textRenderer.fontHeight;
+        }
+    }
+
+    public float getStringHeight() {
+        if (usingCustomFont()) {
+            return FONTS.measureHeight();
+        } else {
+            return mc.textRenderer.fontHeight;
+        }
+    }
+
+    public List<String> listFormattedStringToWidth(String str, int wrapWidth) {
+        return TextRenderUtil.wrapWords(str, wrapWidth);
+    }
+
+    public boolean usingCustomFont() {
+        return fontMod.isEnabled() && FONTS.isInitialized();
+    }
+}

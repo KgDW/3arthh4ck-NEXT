@@ -1,0 +1,35 @@
+# eclipse
+bin
+*.launch
+.settings
+.metadata
+.classpath
+.project
+
+# idea
+out
+*.ipr
+*.iws
+*.iml
+.idea
+
+# VSCode
+.vscode
+
+# gradle
+build
+.gradle
+
+# other
+/runtime/
+eclipse
+run
+*.bak
+
+# version files
+/HeadlessMC/
+/logs/
+/plugins/
+
+# fabric
+/remappedSrc/

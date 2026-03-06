@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "earthhack-fabric",
+  "version": "1.0.0",
+  "name": "3arthh4ck",
+  "description": "The Best 1.12.2 Anarchy and HvH Client, now on newgen!",
+  "authors": ["3arthqu4ke", "oHare", "Megyn", "Gerald", "nukiz", "Ai_2473", "KgDW"],
+  "contact": {
+    "homepage": "https://github.com/3arthh4ckDevelopment",
+    "sources": "https://github.com/3arthh4ckDevelopment/3arthh4ck-Fabric",
+    "issues": "https://github.com/3arthh4ckDevelopment/3arthh4ck-Fabric/issues",
+    "discord": "https://discord.gg/ByCCxHcX8U"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "client",
+  "accessWidener": "earthhack.accesswidener",
+  "entrypoints": {
+    "preLaunch": [
+      "me.earth.earthhack.impl.core.Core"
+    ],
+    "client": [
+      "me.earth.earthhack.impl.Earthhack"
+    ]
+  },
+  "mixins": [
+    "mixins.earth.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": ">=1.21.4",
+    "java": ">=21"
+  }
+}
