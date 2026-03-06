@@ -7,12 +7,23 @@ group = project.maven_group
 
 def modVersion = version
 
-def archiveBaseName = project.archives_base_name
+def archiveName = project.archives_base_name
 
 def lwjglVersion = '3.3.3'
 
-base {
-    archivesName = archiveBaseName
+def jarManifestAttributes = [
+        'Manifest-Version': '1.0',
+        'Main-Class'      : 'me.earth.earthhack.Main'
+]
+
+void configureArchive(org.gradle.jvm.tasks.Jar archiveTask, String archiveBaseName, Map<String, String> manifestAttributes) {
+    archiveTask.from("LICENSE") {
+        rename { "${it}_${archiveBaseName}" }
+    }
+
+    archiveTask.manifest {
+        attributes(manifestAttributes)
+    }
 }
 
 repositories {
@@ -37,19 +48,11 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     library "club.minnced:java-discord-rpc:2.0.2"
-    include "club.minnced:java-discord-rpc:2.0.2"
 
     library "org.lwjgl:lwjgl-nanovg:${lwjglVersion}"
-    include "org.lwjgl:lwjgl-nanovg:${lwjglVersion}"
-
     library "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-windows"
-    include "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-windows"
-
     library "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-linux"
-    include "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-linux"
-
     library "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-macos"
-    include "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-macos"
 }
 
 processResources {
@@ -70,15 +73,31 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-jar {
-    from("LICENSE") {
-        rename { "${it}_${archiveBaseName}" }
+tasks.withType(AbstractArchiveTask).configureEach {
+    archiveBaseName.set(archiveName)
+}
+
+tasks.register('fatJar', Jar) {
+    group = 'build'
+    description = 'Builds the development fat jar used as input for remapJar.'
+    archiveClassifier = 'dev-fat'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from(sourceSets.main.output)
+    from({
+        configurations.library.collect { it.isDirectory() ? it : zipTree(it) }
+    }) {
+        exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
     }
 
-    manifest {
-        attributes(
-                'Manifest-Version': 1.0,
-                "Main-Class": 'me.earth.earthhack.Main'
-        )
-    }
+    configureArchive(delegate as Jar, archiveName, jarManifestAttributes)
+}
+
+jar {
+    configureArchive(delegate as Jar, archiveName, jarManifestAttributes)
+}
+
+remapJar {
+    dependsOn tasks.named('fatJar')
+    inputFile.set(tasks.named('fatJar', Jar).flatMap { it.archiveFile })
 }
