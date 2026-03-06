@@ -27,7 +27,7 @@ jobs:
         run: ./gradlew build
 
       - name: Delete the sources and all jar files
-        run: rm ./build/libs/*{-sources,-all}.jar
+        run: rm -f ./build/libs/*-sources.jar ./build/libs/*-all.jar
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
