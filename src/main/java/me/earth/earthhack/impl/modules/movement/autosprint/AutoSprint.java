@@ -15,7 +15,7 @@ import net.minecraft.entity.effect.StatusEffects;
 public class AutoSprint extends Module
 {
     protected final Setting<SprintMode> mode =
-            register(new EnumSetting<>("Mode", SprintMode.Rage));
+            register(new EnumSetting<>("Mode", SprintMode.Legit));
     public AutoSprint()
     {
         super("Sprint", Category.Movement);

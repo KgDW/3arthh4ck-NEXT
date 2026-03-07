@@ -7,6 +7,10 @@
 ![GitHub](https://img.shields.io/github/license/3arthh4ckDevelopment/3arthh4ck-fabric?color=g)
 [![](https://discordapp.com/api/guilds/1065633124366688298/widget.png?style=shield)](https://discord.gg/5qRuRMExe6)
 
+## Preview
+
+![3arthh4ck ClickGui](image/64795da7-a2c7-4373-aaa1-9fe8b172108b.png)
+
 3arthh4ck is an open source Minecraft 1.12.2 and 1.21.4 utility mod for anarchy PvP. To install the client, just drop the jar file into your Fabric `.minecraft/mods` folder.
 
 By default, any message prefixed with a `+` will be handled as command, e.g. `+bind clickgui RShift`
