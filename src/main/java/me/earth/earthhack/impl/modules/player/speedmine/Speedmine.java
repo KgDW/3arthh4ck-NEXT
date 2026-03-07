@@ -20,7 +20,6 @@ import me.earth.earthhack.impl.modules.Caches;
 import me.earth.earthhack.impl.modules.combat.autotrap.AutoTrap;
 import me.earth.earthhack.impl.modules.player.automine.AutoMine;
 import me.earth.earthhack.impl.modules.player.speedmine.mode.ESPMode;
-import me.earth.earthhack.impl.modules.player.speedmine.mode.GrowCurve;
 import me.earth.earthhack.impl.modules.player.speedmine.mode.MineMode;
 import me.earth.earthhack.impl.modules.player.speedmine.mode.SpeedminePages;
 import me.earth.earthhack.impl.util.client.ModuleUtil;
@@ -784,5 +783,104 @@ public class Speedmine extends Module {
         }
 
         return false;
+    }
+
+    protected enum GrowCurve
+    {
+        Linear
+        {
+            @Override
+            public float apply(float t)
+            {
+                return t;
+            }
+        },
+        Smooth
+        {
+            @Override
+            public float apply(float t)
+            {
+                return t * t * (3.0f - 2.0f * t);
+            }
+        },
+        SmootherStep
+        {
+            @Override
+            public float apply(float t)
+            {
+                return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
+            }
+        },
+        EaseOutCubic
+        {
+            @Override
+            public float apply(float t)
+            {
+                float f = 1.0f - t;
+                return 1.0f - f * f * f;
+            }
+        },
+        EaseOutQuart
+        {
+            @Override
+            public float apply(float t)
+            {
+                float f = 1.0f - t;
+                return 1.0f - f * f * f * f;
+            }
+        },
+        EaseOutBack
+        {
+            @Override
+            public float apply(float t)
+            {
+                float c1 = 1.70158f;
+                float c3 = c1 + 1.0f;
+                float f = t - 1.0f;
+                return 1.0f + c3 * f * f * f + c1 * f * f;
+            }
+        },
+        EaseOutElastic
+        {
+            @Override
+            public float apply(float t)
+            {
+                if (t <= 0.0f) return 0.0f;
+                if (t >= 1.0f) return 1.0f;
+                float c4 = (float) (2.0 * Math.PI / 3.0);
+                return (float) (Math.pow(2.0, -10.0 * t)
+                        * Math.sin((t * 10.0 - 0.75) * c4) + 1.0);
+            }
+        },
+        EaseOutBounce
+        {
+            @Override
+            public float apply(float t)
+            {
+                float n1 = 7.5625f;
+                float d1 = 2.75f;
+                if (t < 1.0f / d1)
+                {
+                    return n1 * t * t;
+                }
+                else if (t < 2.0f / d1)
+                {
+                    t -= 1.5f / d1;
+                    return n1 * t * t + 0.75f;
+                }
+                else if (t < 2.5f / d1)
+                {
+                    t -= 2.25f / d1;
+                    return n1 * t * t + 0.9375f;
+                }
+                else
+                {
+                    t -= 2.625f / d1;
+                    return n1 * t * t + 0.984375f;
+                }
+            }
+        };
+
+        public abstract float apply(float t);
     }
 }
