@@ -2,10 +2,7 @@
 
 # 3arthh4ck (Fabric Edition)
 
-[![GitHub All Releases](https://img.shields.io/github/downloads/3arthh4ckDevelopment/3arthh4ck-fabric/total.svg?color=g)](https://github.com/3arthh4ckDevelopment/3arthh4ck-fabric/releases)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/3arthh4ckDevelopment/3arthh4ck-fabric/gradle-build.yml)
 ![GitHub](https://img.shields.io/github/license/3arthh4ckDevelopment/3arthh4ck-fabric?color=g)
-[![](https://discordapp.com/api/guilds/1065633124366688298/widget.png?style=shield)](https://discord.gg/5qRuRMExe6)
 
 ## Preview
 
