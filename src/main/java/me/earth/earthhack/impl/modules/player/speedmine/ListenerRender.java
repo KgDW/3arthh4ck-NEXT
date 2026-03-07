@@ -16,8 +16,6 @@ final class ListenerRender extends ModuleListener<Speedmine, Render3DEvent>
         super(module, Render3DEvent.class);
     }
 
-    private Box cachedBB;
-
     @Override
     public void invoke(Render3DEvent event)
     {
@@ -32,11 +30,14 @@ final class ListenerRender extends ModuleListener<Speedmine, Render3DEvent>
 
             event.getStack().push();
 
-            float max = Math.min(module.maxDamage, 1.0f);
+            float prev = Math.min(module.prevMaxDamage, 1.0f);
+            float curr = Math.min(module.maxDamage, 1.0f);
+            float max = prev + (curr - prev) * event.getDelta();
             Box renderBB = module.bb;
             if (module.growRender.getValue() && max < 1.0f)
             {
-                renderBB = renderBB.expand(-0.5 + (max / 2.0));
+                float eased = module.growCurve.getValue().apply(max);
+                renderBB = renderBB.expand(-0.5 + (eased / 2.0));
             }
 
             Box bb = Interpolation.interpolateAxis(renderBB);

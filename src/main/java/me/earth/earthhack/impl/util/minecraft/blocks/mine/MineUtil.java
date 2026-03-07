@@ -20,18 +20,17 @@ public class MineUtil implements Globals
     public static boolean canHarvestBlock(BlockPos pos, ItemStack stack)
     {
         BlockState state = mc.world.getBlockState(pos);
-        Block block = state.getBlock();
-        if (state.isToolRequired())
+        if (!state.isToolRequired())
         {
             return true;
         }
 
         if (stack.isEmpty())
         {
-            return stack.getItem().isCorrectForDrops(stack, state); //TODO: check
+            return false;
         }
 
-        return false;
+        return stack.getItem().isCorrectForDrops(stack, state);
     }
 
     public static int findBestTool(BlockPos pos)

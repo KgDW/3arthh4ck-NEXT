@@ -25,6 +25,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Mixin(ClientConnection.class)
@@ -37,6 +40,10 @@ public abstract class MixinClientConnection implements IClientConnection
     @Unique
     private static final ModuleCache<PacketDelay> PACKET_DELAY =
             Caches.getModule(PacketDelay.class);
+    @Unique
+    private Set<Packet<?>> earthhack$ignoreSend;
+    @Unique
+    private Set<Packet<?>> earthhack$ignorePost;
 
     @Shadow public abstract boolean isOpen();
 
@@ -56,7 +63,34 @@ public abstract class MixinClientConnection implements IClientConnection
     }
 
     @Unique
+    private Set<Packet<?>> earthhack$getIgnoreSend()
+    {
+        if (earthhack$ignoreSend == null)
+        {
+            earthhack$ignoreSend = Collections.newSetFromMap(new IdentityHashMap<>());
+        }
+
+        return earthhack$ignoreSend;
+    }
+
+    @Unique
+    private Set<Packet<?>> earthhack$getIgnorePost()
+    {
+        if (earthhack$ignorePost == null)
+        {
+            earthhack$ignorePost = Collections.newSetFromMap(new IdentityHashMap<>());
+        }
+
+        return earthhack$ignorePost;
+    }
+
+    @Unique
     public void earthhack$onSendPacket(Packet<?> packet, CallbackInfo ci) {
+        if (earthhack$getIgnoreSend().remove(packet))
+        {
+            return;
+        }
+
         if (PACKET_DELAY.isEnabled()
                 && !PACKET_DELAY.get().packets.contains(packet)
                 && PACKET_DELAY.get().isPacketValid(
@@ -103,17 +137,13 @@ public abstract class MixinClientConnection implements IClientConnection
 
         if (this.isOpen())
         {
-            this.flush();
-
-            if (post)
+            earthhack$getIgnoreSend().add(packet);
+            if (!post)
             {
-                this.send(packet);
-            }
-            else
-            {
-                // this.dispatchSilently(packet);
+                earthhack$getIgnorePost().add(packet);
             }
 
+            this.send(packet);
             return packet;
         }
 
@@ -127,6 +157,11 @@ public abstract class MixinClientConnection implements IClientConnection
                                  PacketCallbacks callbacks,
                                  boolean flush, CallbackInfo ci)
     {
+        if (earthhack$getIgnorePost().remove(packet))
+        {
+            return;
+        }
+
         PacketEvent.Post<?> event = getPost(packet);
         Bus.EVENT_BUS.post(event, packet.getClass());
     }

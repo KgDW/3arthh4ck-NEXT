@@ -14,11 +14,20 @@ final class ListenerReset extends ModuleListener<Speedmine, ResetBlockEvent>
     @Override
     public void invoke(ResetBlockEvent event)
     {
-        if (module.noReset.getValue()
-                || module.mode.getValue() == MineMode.Reset)
+        if (!(module.noReset.getValue()
+                || module.mode.getValue() == MineMode.Reset))
         {
-            event.setCancelled(true);
+            return;
         }
+
+        if (module.getPos() == null
+                || mc.options.useKey.isPressed()
+                || !mc.options.attackKey.isPressed())
+        {
+            return;
+        }
+
+        event.setCancelled(true);
     }
 
 }

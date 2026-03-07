@@ -16,7 +16,6 @@ import me.earth.earthhack.impl.util.minecraft.InventoryUtil;
 import me.earth.earthhack.impl.util.minecraft.PlayerUtil;
 import me.earth.earthhack.impl.util.minecraft.blocks.BlockUtil;
 import me.earth.earthhack.impl.util.network.NetworkUtil;
-import me.earth.earthhack.impl.util.text.ChatUtil;
 import me.earth.earthhack.impl.util.thread.Locks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -101,8 +100,14 @@ final class ListenerUpdate extends ModuleListener<Speedmine, UpdateEvent>
                     || module.mode.getValue() == MineMode.Reset)
                 && mc.options.useKey.isPressed())
         {
-            ((IClientPlayerInteractionManager) mc.interactionManager)
-                    .earthhack$setIsHittingBlock(false);
+            if (module.getPos() != null
+                    || ((IClientPlayerInteractionManager) mc.interactionManager).earthhack$getIsHittingBlock()
+                    || ((IClientPlayerInteractionManager) mc.interactionManager).earthhack$getCurrentBreakingProgress() > 0.0f)
+            {
+                module.releaseMiningState(true);
+            }
+
+            return;
         }
 
         if (module.pos != null)
@@ -174,10 +179,18 @@ final class ListenerUpdate extends ModuleListener<Speedmine, UpdateEvent>
                     && !module.pausing
                     && module.breakBind.getValue().getKey() == -1)
             {
+                BlockPos miningPos = module.getPos();
+                Direction miningFacing = module.getFacing();
+                if (miningPos == null || miningFacing == null)
+                {
+                    module.reset();
+                    return;
+                }
+
                 int lastSlot = mc.player.getInventory().selectedSlot;
-                final PlayerEntity placeTarg = getPlacePlayer(module.pos);
+                final PlayerEntity placeTarg = getPlacePlayer(miningPos);
                 if (placeTarg != null) {
-                    final BlockPos p = PlayerUtil.getBestPlace(module.pos, placeTarg);
+                    final BlockPos p = PlayerUtil.getBestPlace(miningPos, placeTarg);
                     if (module.placeCrystal.getValue() && AUTOCRYSTAL.isEnabled() && p != null && BlockUtil.canPlaceCrystal(p,false,false)) {
                         final BlockHitResult result = new BlockHitResult(new Vec3d(0.5, 1.0, 0.5).add(p.toCenterPos()), Direction.UP, p, false);
 
@@ -214,33 +227,29 @@ final class ListenerUpdate extends ModuleListener<Speedmine, UpdateEvent>
 
                 Locks.acquire(Locks.WINDOW_CLICK_LOCK, () ->
                 {
-                    ChatUtil.sendMessage("Acquiring WINDOW_CLICK_LOCK!", module.getName());
                     if (module.swap.getValue())
                     {
                         module.cooldownBypass.getValue().switchTo(pickSlot);
-                        ChatUtil.sendMessage("Attempted Swap to " + pickSlot, module.getName() + "swap");
                     }
 
                     NetworkUtil.sendPacketNoEvent(
                         new PlayerActionC2SPacket(
                                 PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
-                            module.pos,
-                            module.facing),
+                            miningPos,
+                            miningFacing),
                         false);
 
                     if (module.swap.getValue())
                     {
                         module.cooldownBypass.getValue().switchBack(
                             lastSlot, pickSlot);
-                        ChatUtil.sendMessage("Attempted SwapBack to " + lastSlot, module.getName() + "swap");
                     }
                 });
 
                 if (module.toAir.getValue())
                 {
-                    mc.interactionManager.breakBlock(module.pos);
+                    mc.interactionManager.breakBlock(miningPos);
                 }
-                ChatUtil.sendMessage("Sending packets!", module.getName() + "packet");
                 module.onSendPacket();
             }
         }

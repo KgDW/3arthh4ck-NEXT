@@ -1,6 +1,7 @@
 package me.earth.earthhack.impl.modules.player.speedmine;
 
 import me.earth.earthhack.api.cache.ModuleCache;
+import me.earth.earthhack.api.event.bus.instance.Bus;
 import me.earth.earthhack.api.module.Module;
 import me.earth.earthhack.api.module.util.Category;
 import me.earth.earthhack.api.setting.Complexity;
@@ -19,6 +20,7 @@ import me.earth.earthhack.impl.modules.Caches;
 import me.earth.earthhack.impl.modules.combat.autotrap.AutoTrap;
 import me.earth.earthhack.impl.modules.player.automine.AutoMine;
 import me.earth.earthhack.impl.modules.player.speedmine.mode.ESPMode;
+import me.earth.earthhack.impl.modules.player.speedmine.mode.GrowCurve;
 import me.earth.earthhack.impl.modules.player.speedmine.mode.MineMode;
 import me.earth.earthhack.impl.modules.player.speedmine.mode.SpeedminePages;
 import me.earth.earthhack.impl.util.client.ModuleUtil;
@@ -230,6 +232,9 @@ public class Speedmine extends Module {
     protected final Setting<Boolean> growRender =
             register(new BooleanSetting("GrowRender", false))
                     .setComplexity(Complexity.Medium);
+    protected final Setting<GrowCurve> growCurve =
+            register(new EnumSetting<>("GrowCurve", GrowCurve.Smooth))
+                    .setComplexity(Complexity.Medium);
 
     protected final FastHelper fastHelper = new FastHelper(this);
     public final CrystalHelper crystalHelper = new CrystalHelper(this);
@@ -270,6 +275,7 @@ public class Speedmine extends Module {
      * Maximum damage dealt to the current Pos.
      */
     public float maxDamage;
+    public float prevMaxDamage;
     /**
      * <tt>true</tt> if we sent the STOP_DESTROY packet.
      */
@@ -298,6 +304,7 @@ public class Speedmine extends Module {
     public Speedmine() 
     {
         super("Speedmine", Category.Player);
+        Bus.EVENT_BUS.subscribe(ongroundHistoryHelper);
         this.listeners.add(new ListenerDamage(this));
         this.listeners.add(new ListenerReset(this));
         this.listeners.add(new ListenerClick(this));
@@ -328,6 +335,12 @@ public class Speedmine extends Module {
     }
 
     @Override
+    protected void onDisable()
+    {
+        releaseMiningState(false);
+    }
+
+    @Override
     public String getDisplayInfo()
     {
         if (display.getValue()
@@ -348,16 +361,37 @@ public class Speedmine extends Module {
      */
     public void abortCurrentPos()
     {
+        if (pos == null || facing == null)
+        {
+            reset();
+            return;
+        }
+
         AUTO_MINE.computeIfPresent(a -> a.addToBlackList(pos));
-        NetworkUtil.send(new PlayerActionC2SPacket(
-                PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK,
-                pos,
-                facing));
+        releaseMiningState(true);
+        mc.player.resetLastAttackedTicks();
+    }
+
+    public void releaseMiningState(boolean abortServerSide)
+    {
+        BlockPos pos = this.pos;
+        Direction facing = this.facing;
+        if (abortServerSide && pos != null && facing != null)
+        {
+            NetworkUtil.sendPacketNoEvent(new PlayerActionC2SPacket(
+                    PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK,
+                    pos,
+                    facing), false);
+        }
 
         ((IClientPlayerInteractionManager) mc.interactionManager).earthhack$setIsHittingBlock(false);
         ((IClientPlayerInteractionManager) mc.interactionManager).earthhack$setCurrentBreakingProgress(0.0f);
-        mc.world.setBlockBreakingInfo(mc.player.getId(), pos, -1);
-        mc.player.resetLastAttackedTicks();
+        ((IClientPlayerInteractionManager) mc.interactionManager).earthhack$setBlockHitDelay(0);
+        if (mc.player != null && mc.world != null && pos != null)
+        {
+            mc.world.setBlockBreakingInfo(mc.player.getId(), pos, -1);
+        }
+
         reset();
     }
 
@@ -369,6 +403,7 @@ public class Speedmine extends Module {
         pos    = null;
         facing = null;
         bb     = null;
+        prevMaxDamage = 0.0f;
         maxDamage  = 0.0f;
         sentPacket = false;
         limitRotationSlot = -1;
@@ -384,6 +419,11 @@ public class Speedmine extends Module {
 
     public void retry() {
         BlockPos cachedPos = getPos();
+        if (cachedPos == null)
+        {
+            return;
+        }
+
         Direction facing = RayTraceUtil.getFacing(mc.player, cachedPos, true);
         if (facing == null) {
             ModuleUtil.sendMessage(this, "Mining failure; facing is null.");
@@ -450,6 +490,11 @@ public class Speedmine extends Module {
                                       boolean toAir,
                                       boolean withRotations)
     {
+        if (pos == null || facing == null)
+        {
+            return false;
+        }
+
         PlayerActionC2SPacket stop  =
                 new PlayerActionC2SPacket(
                         PlayerActionC2SPacket
@@ -501,6 +546,12 @@ public class Speedmine extends Module {
 
     protected void postSend(boolean toAir)
     {
+        BlockPos pos = this.pos;
+        if (pos == null)
+        {
+            return;
+        }
+
         if (placeCrystal.getValue())
         {
             AUTO_TRAP.computeIfPresent(autoTrap -> autoTrap.blackList
@@ -554,7 +605,9 @@ public class Speedmine extends Module {
 
     public void forceSend()
     {
-        if (pos != null)
+        BlockPos pos = this.pos;
+        Direction facing = this.facing;
+        if (pos != null && facing != null)
         {
             if (mode.getValue() == MineMode.Instant)
             {
@@ -575,6 +628,13 @@ public class Speedmine extends Module {
     }
 
     public void tryBreak() {
+        BlockPos pos = this.pos;
+        Direction facing = this.facing;
+        if (pos == null || facing == null)
+        {
+            return;
+        }
+
         int breakSlot;
         if (!pausing && ((breakSlot = findBreakSlot()) != -1 || requireBreakSlot.getValue())) {
             boolean toAir = this.toAir.getValue();
@@ -647,6 +707,7 @@ public class Speedmine extends Module {
 
     public void updateDamages()
     {
+        prevMaxDamage = maxDamage;
         maxDamage = 0.0f;
         for (int i = 0; i < 9; i++)
         {
@@ -684,6 +745,13 @@ public class Speedmine extends Module {
 
     public void postCrystalPlace(int fastSlot, int lastSlot, boolean swap)
     {
+        BlockPos pos = this.pos;
+        Direction facing = this.facing;
+        if (pos == null || facing == null)
+        {
+            return;
+        }
+
         if (swap)
         {
             cooldownBypass.getValue().switchTo(fastSlot);

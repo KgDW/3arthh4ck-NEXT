@@ -102,6 +102,7 @@ public class FastHelper implements Globals {
             }
         }
 
+        module.prevMaxDamage = module.maxDamage;
         module.maxDamage = 0.0f;
         for (int i = 0; i < 9; i++) {
             ItemStack stack = mc.player.getInventory().getStack(i);
