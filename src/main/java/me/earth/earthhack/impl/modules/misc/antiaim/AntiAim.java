@@ -8,6 +8,7 @@ import me.earth.earthhack.api.setting.settings.EnumSetting;
 import me.earth.earthhack.api.setting.settings.NumberSetting;
 import me.earth.earthhack.impl.util.math.StopWatch;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.item.ItemStack;
 
 public class AntiAim extends Module
 {
@@ -63,18 +64,25 @@ public class AntiAim extends Module
     {
         if (mc.player != null)
         {
-            lastYaw = mc.player.headYaw;
-            lastPitch = mc.player.pitch;
+            lastYaw = mc.player.getYaw();
+            lastPitch = mc.player.getPitch();
+            timer.reset();
         }
     }
 
     public boolean dontRotate()
     {
-        return strict.getValue()
-                && (((!(mc.player.getActiveItem().getItem().getComponents().contains(DataComponentTypes.FOOD))
-                || mc.options.attackKey.isPressed())
-                && (mc.options.attackKey.isPressed()
-                || mc.options.useKey.isPressed()))
-                || mc.mouse.middleButtonClicked);
+        if (!strict.getValue() || mc.player == null)
+        {
+            return false;
+        }
+
+        ItemStack activeItem = mc.player.getActiveItem();
+        boolean usingFood = !activeItem.isEmpty()
+                && activeItem.getComponents().contains(DataComponentTypes.FOOD);
+        boolean attack = mc.options.attackKey.isPressed();
+        boolean use = mc.options.useKey.isPressed();
+
+        return mc.mouse.middleButtonClicked || attack || use && !usingFood;
     }
 }
